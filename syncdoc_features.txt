@@ -1,0 +1,54 @@
+===========================================
+        SYNCDOC - FEATURE OVERVIEW
+===========================================
+
+Here is the complete list of everything your web application (SyncDoc) can currently do, broken down by category:
+
+1. 🔐 AUTHENTICATION & USER ACCOUNTS (MOCKED)
+-------------------------------------------
+• Email & Password Signup: Users can create an account with a name, email, and password. It features a dynamic, animated password-strength meter (Weak to Excellent).
+• Simulated Social Logins: Users can click 'Sign in with Google' or 'GitHub' which triggers a simulated OAuth modal to collect their mock details.
+• Local Database Validation: The app prevents logging into accounts that don't exist and blocks signing up with an email that is already registered.
+• Secure Access: Only logged-in users can access the dashboard and inner pages; logged-out users are redirected to the Login page.
+
+2. 📊 DASHBOARD & WORKSPACE MANAGEMENT
+-------------------------------------------
+• Personalized Dashboard: The dashboard accurately displays only the documents owned by or shared with the currently logged-in user.
+• Dynamic Statistics: At the top of the dashboard, it calculates and displays the user's Total Documents, documents Shared with them, and Active Collaborators.
+• Document Grid: Displays all documents with their titles, last opened time, owner, and the specific role (Owner, Editor, Viewer) the current user has for that document.
+• Search & Filter: A functional search bar allows users to filter their documents by title.
+• Quick Actions: Users can easily create a "New Document" from a template directly from the dashboard sidebar.
+• Real Profile integration: The sidebar updates to show the logged-in user's name and initials.
+
+3. 📝 NOTION-STYLE BLOCK EDITOR (TIPTAP)
+-------------------------------------------
+• Rich Text Editing: A powerful, block-based `TipTap` editor that replaces standard text boxes.
+• Slash Commands (/): Typing `/` anywhere in the editor opens a floating menu allowing the user to quickly insert Heading 1, Heading 2, Bullet Lists, Numbered Lists, or Dividers using only their keyboard.
+• Reactive Toolbar: An elegant top formatting toolbar where buttons (Bold, Italic, Underline) automatically highlight when your cursor is on text that has those styles applied.
+• Professional Typography: Tailwind Typography is used to ensure the text looks beautiful, readable, and perfectly spaced, exactly like top-tier apps (Notion, Google Docs).
+
+4. 🤝 REAL-TIME COLLABORATION & PRESENCE
+-------------------------------------------
+• Live Typing Sync: Multiple users can open the same document on different computers (or tabs) and see each other's typing and formatting changes instantly via Socket.io WebSockets.
+• Live Presence (Avatars): The top right corner of the editor shows the avatars/initials of exactly who else is currently viewing or editing the document right now.
+• Socket Rooms: The backend efficiently isolates traffic so users in "Document A" don't see the text updates meant for "Document B".
+
+5. 🛡️ ROLE-BASED ACCESS CONTROL (PERMISSIONS)
+-------------------------------------------
+• Owner Privileges: The person who creates the document is automatically assigned the "Owner" role.
+• Viewer Check: If a user is only granted 'Viewer' permissions, the Editor automatically locks itself (Read-Only mode), disables the toolbar, and shows them an orange "Read-only" badge.
+• Permission Denied Alerts: If a Viewer attempts to hack the editor or bypass the UI to type, the app detects it and shows a red "Permission Denied" toast alert.
+
+6. 📱 MODERN & RESPONSIVE UI/UX
+-------------------------------------------
+• Glassmorphism Design: The app uses expensive-looking translucent panels, subtle drop shadows, and blur effects for a premium feel.
+• Smooth Animations: Framer Motion is used heavily on the landing page for fade-ins, sliding text, and floating elements. Modals and menus animate smoothly.
+• Fully Responsive: The interface adapts to small mobile screens, iPads, and large desktop monitors smoothly without breaking.
+
+===========================================
+WHAT IS PENDING / COMING NEXT?
+===========================================
+- Connecting the Backend PostgreSQL Database (Right now it uses temporary LocalStorage so you can test it without a server).
+- Wiring up the Gemini AI "Smart Suggest" functionality.
+- Wiring up the Live Chat Panel inside the Document Editor.
+- Implementing the "Share" button modal to actually invite other specific emails.
