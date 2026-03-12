@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../config';
 
 interface Permission {
   userId: string;
@@ -33,7 +34,7 @@ export default function ShareDocumentModal({ isOpen, onClose, documentId, curren
   // Fetch existing permissions
   useEffect(() => {
     if (!isOpen) return;
-    fetch(`http://localhost:5000/documents/${documentId}/permissions`)
+    fetch(`${API_BASE_URL}/documents/${documentId}/permissions`)
       .then((r) => r.json())
       .then((data) => setPermissions(data.permissions || []))
       .catch(() => {});
@@ -46,7 +47,7 @@ export default function ShareDocumentModal({ isOpen, onClose, documentId, curren
     setSuccess('');
 
     try {
-      const res = await fetch(`http://localhost:5000/documents/${documentId}/share`, {
+      const res = await fetch(`${API_BASE_URL}/documents/${documentId}/share`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-id': 'u1' },
         body: JSON.stringify({ email: email.trim(), role }),
@@ -63,7 +64,7 @@ export default function ShareDocumentModal({ isOpen, onClose, documentId, curren
       setEmail('');
 
       // Refresh permissions
-      const permsRes = await fetch(`http://localhost:5000/documents/${documentId}/permissions`);
+      const permsRes = await fetch(`${API_BASE_URL}/documents/${documentId}/permissions`);
       const permsData = await permsRes.json();
       setPermissions(permsData.permissions || []);
     } catch {
@@ -75,7 +76,7 @@ export default function ShareDocumentModal({ isOpen, onClose, documentId, curren
 
   const handleRemove = async (userId: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/documents/${documentId}/share/${userId}`, {
+      const res = await fetch(`${API_BASE_URL}/documents/${documentId}/share/${userId}`, {
         method: 'DELETE',
         headers: { 'x-user-id': 'u1' },
       });

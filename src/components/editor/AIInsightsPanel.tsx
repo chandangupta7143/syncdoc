@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { API_BASE_URL } from '../../config';
 
 interface AIInsightsPanelProps {
   documentId: string;
@@ -43,7 +44,7 @@ export default function AIInsightsPanel(_props: AIInsightsPanelProps) {
     setResponse('');
 
     try {
-      const res = await fetch('http://localhost:5000/ai/analyze', {
+      const res = await fetch(`${API_BASE_URL}/ai/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, content }),

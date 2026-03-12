@@ -4,6 +4,7 @@ import AuthCard from '../components/auth/AuthCard';
 import InputField from '../components/auth/InputField';
 import AuthButton from '../components/auth/AuthButton';
 import MockOAuthModal from '../components/auth/MockOAuthModal';
+import { API_BASE_URL } from '../config';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -37,7 +38,7 @@ export default function LoginPage() {
     setErrors({});
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

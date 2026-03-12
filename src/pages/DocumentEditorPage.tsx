@@ -6,6 +6,7 @@ import ChatPanel from '../components/editor/ChatPanel';
 import AIInsightsPanel from '../components/editor/AIInsightsPanel';
 import ShareDocumentModal from '../components/editor/ShareDocumentModal';
 import { joinDocument, leaveDocument, disconnectSocket, getSocket } from '../services/socket';
+import { API_BASE_URL } from '../config';
 
 type PanelTab = 'chat' | 'ai';
 
@@ -40,7 +41,7 @@ export default function DocumentEditorPage() {
       if (saved) token = JSON.parse(saved).token || '';
     } catch {}
 
-    fetch(`http://localhost:5000/api/documents/${id}/permissions`, {
+    fetch(`${API_BASE_URL}/api/documents/${id}/permissions`, {
       headers: { 
         'Authorization': `Bearer ${token}` 
       },

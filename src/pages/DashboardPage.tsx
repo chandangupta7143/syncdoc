@@ -5,6 +5,7 @@ import TopBar from '../components/dashboard/TopBar';
 import DocumentCard from '../components/dashboard/DocumentCard';
 import CreateDocumentModal from '../components/dashboard/CreateDocumentModal';
 import type { DocumentData } from '../components/dashboard/DocumentCard';
+import { API_BASE_URL } from '../config';
 
 
 export default function DashboardPage() {
@@ -39,7 +40,7 @@ export default function DashboardPage() {
     // Fetch documents from PostgreSQL backend
     const fetchDocuments = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/documents', {
+        const response = await fetch(`${API_BASE_URL}/api/documents`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -105,7 +106,7 @@ export default function DashboardPage() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/documents', {
+      const response = await fetch(`${API_BASE_URL}/api/documents`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
