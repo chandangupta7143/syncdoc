@@ -98,6 +98,32 @@ export default function DashboardPage() {
     }));
   }, [searchValue, userDocs, currentUser, location.pathname]);
 
+  const handleRemoveDocument = async (id: string) => {
+    const saved = localStorage.getItem('syncdoc_user');
+    let token = '';
+    if (saved) {
+      try { token = JSON.parse(saved).token; } catch (e) {}
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/documents/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+      });
+
+      if (response.ok) {
+        setUserDocs((prev) => prev.filter((d) => d.id !== id));
+      } else {
+        const data = await response.json();
+        alert(data.message || 'Failed to delete document');
+      }
+    } catch (err) {
+      console.error('API Error:', err);
+    }
+  };
+
   const handleCreateDocument = async (title: string) => {
     const saved = localStorage.getItem('syncdoc_user');
     let token = '';
@@ -211,7 +237,7 @@ export default function DashboardPage() {
           {filteredDocuments.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {filteredDocuments.map((doc) => (
-                <DocumentCard key={doc.id} document={doc} />
+                <DocumentCard key={doc.id} document={doc} onDelete={handleRemoveDocument} />
               ))}
             </div>
           ) : (

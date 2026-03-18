@@ -14,47 +14,32 @@ export default function DocumentEditorPage() {
   const { id } = useParams<{ id: string }>();
   const [activePanel, setActivePanel] = useState<PanelTab | null>('chat');
   const [showShareModal, setShowShareModal] = useState(false);
-  const [userRole, setUserRole] = useState<string>('editor');
+  const [docTitle, setDocTitle] = useState('New Document');
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [userRole, setUserRole] = useState<string>('viewer');
 
   // Fetch role + socket lifecycle
   useEffect(() => {
     if (!id) return;
 
-    // Get current user email from localStorage
-    let userEmail = 'viewer@example.com';
-    try {
-      const saved = localStorage.getItem('syncdoc_user');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.email) {
-          userEmail = parsed.email;
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    // Fetch user role from server
+    // Fetch user details + doc title
     let token = '';
     try {
       const saved = localStorage.getItem('syncdoc_user');
       if (saved) token = JSON.parse(saved).token || '';
     } catch {}
 
-    fetch(`${API_BASE_URL}/api/documents/${id}/permissions`, {
-      headers: { 
-        'Authorization': `Bearer ${token}` 
-      },
+    fetch(`${API_BASE_URL}/api/documents/${id}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
     })
       .then((r) => r.json())
       .then((data) => {
-        // Find our role in the permissions list
-        const myPerm = data.permissions.find((p: any) => p.email === userEmail);
-        setUserRole(myPerm ? myPerm.role : 'viewer');
+        if (data.document) setDocTitle(data.document.title);
+        if (data.role) setUserRole(data.role);
       })
       .catch(() => setUserRole('viewer'));
 
-    // Get current user from localStorage
+    // ... (rest of join logic and presence)
     let currentName = 'Anonymous';
     let currentInitials = 'A';
     try {
@@ -66,22 +51,16 @@ export default function DocumentEditorPage() {
           currentInitials = currentName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
         }
       }
-    } catch (e) {
-      // use defaults
-    }
+    } catch (e) {}
 
-    // Join socket room
     joinDocument(id, {
       name: currentName,
       initials: currentInitials,
       color: 'from-primary-400 to-primary-600',
     });
 
-    // Listen for role assignment from server
     const socket = getSocket();
-    const handleYourRole = ({ role }: { role: string }) => {
-      setUserRole(role);
-    };
+    const handleYourRole = ({ role }: { role: string }) => setUserRole(role);
     socket.on('your-role', handleYourRole);
 
     return () => {
@@ -91,7 +70,33 @@ export default function DocumentEditorPage() {
     };
   }, [id]);
 
+  const handleRenameDoc = async (newTitle: string) => {
+    if (!newTitle.trim() || newTitle === docTitle) {
+      setIsEditingTitle(false);
+      return;
+    }
 
+    let token = '';
+    try {
+      const saved = localStorage.getItem('syncdoc_user');
+      if (saved) token = JSON.parse(saved).token || '';
+    } catch {}
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/documents/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ title: newTitle }),
+      });
+      if (res.ok) setDocTitle(newTitle);
+    } catch (e) {
+      console.error('Rename failed', e);
+    }
+    setIsEditingTitle(false);
+  };
 
   const roleBadgeStyles: Record<string, string> = {
     owner: 'bg-primary-50 text-primary-700 border-primary-200',
@@ -120,15 +125,31 @@ export default function DocumentEditorPage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-sm font-semibold text-surface-900 leading-tight">Project Roadmap Q4</h1>
+                {isEditingTitle ? (
+                  <input
+                    autoFocus
+                    className="text-sm font-semibold text-surface-900 leading-tight bg-surface-50 border-none outline-none focus:ring-1 focus:ring-primary-500 rounded px-1"
+                    defaultValue={docTitle}
+                    onBlur={(e) => handleRenameDoc(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleRenameDoc((e.target as HTMLInputElement).value)}
+                  />
+                ) : (
+                  <h1 
+                    onClick={() => userRole !== 'viewer' && setIsEditingTitle(true)}
+                    className={`text-sm font-semibold text-surface-900 leading-tight ${userRole !== 'viewer' ? 'cursor-pointer hover:bg-surface-50 px-1 rounded transition-colors' : ''}`}
+                  >
+                    {docTitle}
+                  </h1>
+                )}
                 <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide ${roleBadgeStyles[userRole] || roleBadgeStyles.viewer}`}>
                   {userRole}
                 </span>
               </div>
-              <p className="text-[10px] text-surface-700">Document #{id} · Last saved 2 min ago</p>
+              <p className="text-[10px] text-surface-700">Document #{id} · Auto-saved to cloud</p>
             </div>
           </div>
         </div>
+
 
         {/* Center – presence */}
         <PresenceUsers />

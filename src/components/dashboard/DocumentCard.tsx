@@ -12,6 +12,7 @@ export interface DocumentData {
 
 interface DocumentCardProps {
   document: DocumentData;
+  onDelete?: (id: string) => void;
 }
 
 const roleBadgeStyles: Record<string, string> = {
@@ -20,11 +21,19 @@ const roleBadgeStyles: Record<string, string> = {
   Viewer: 'bg-surface-100 text-surface-700 border-surface-200',
 };
 
-export default function DocumentCard({ document }: DocumentCardProps) {
+export default function DocumentCard({ document, onDelete }: DocumentCardProps) {
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onDelete && window.confirm(`Are you sure you want to delete "${document.title}"?`)) {
+      onDelete(document.id);
+    }
+  };
+
   return (
     <Link
       to={`/document/${document.id}`}
-      className="group block bg-white rounded-2xl border border-surface-200/80 hover:border-primary-200 hover:shadow-xl hover:shadow-primary-500/5 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+      className="group block bg-white rounded-2xl border border-surface-200/80 hover:border-primary-200 hover:shadow-xl hover:shadow-primary-500/5 hover:-translate-y-1 transition-all duration-300 overflow-hidden relative"
     >
       {/* Preview area */}
       <div className="px-6 pt-6 pb-4">
@@ -49,11 +58,11 @@ export default function DocumentCard({ document }: DocumentCardProps) {
 
         {/* Text preview */}
         <div className="space-y-1.5 mb-4">
-          <div className="h-2 bg-surface-100 rounded-full w-full" />
-          <div className="h-2 bg-surface-100 rounded-full w-5/6" />
-          <div className="h-2 bg-surface-100 rounded-full w-3/4" />
+          <div className="h-2 bg-surface-100 rounded-full w-full opacity-60" />
+          <div className="h-2 bg-surface-100 rounded-full w-5/6 opacity-40" />
+          <div className="h-2 bg-surface-100 rounded-full w-3/4 opacity-20" />
         </div>
-        <p className="text-xs text-surface-700 line-clamp-2 leading-relaxed">
+        <p className="text-xs text-surface-700 line-clamp-2 leading-relaxed h-10">
           {document.preview}
         </p>
       </div>
@@ -66,7 +75,7 @@ export default function DocumentCard({ document }: DocumentCardProps) {
             {document.collaborators.slice(0, 3).map((c, i) => (
               <div
                 key={i}
-                className={`w-6 h-6 rounded-full ${c.color} border-2 border-white flex items-center justify-center text-white text-[9px] font-bold`}
+                className={`w-6 h-6 rounded-full ${c.color || 'bg-primary-500'} border-2 border-white flex items-center justify-center text-white text-[9px] font-bold shadow-sm`}
                 title={c.name}
               >
                 {c.initials}
@@ -78,11 +87,23 @@ export default function DocumentCard({ document }: DocumentCardProps) {
               </div>
             )}
           </div>
+          <span className="text-[11px] text-surface-700">{document.updatedAt}</span>
         </div>
 
-        {/* Updated at */}
-        <span className="text-[11px] text-surface-700">{document.updatedAt}</span>
+        {/* Delete option (Only for Owners) */}
+        {document.role === 'Owner' && (
+          <button
+            onClick={handleDelete}
+            className="p-1.5 rounded-lg text-surface-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+            title="Delete Document"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            </svg>
+          </button>
+        )}
       </div>
     </Link>
   );
 }
+

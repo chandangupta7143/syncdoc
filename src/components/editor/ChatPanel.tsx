@@ -81,15 +81,32 @@ export default function ChatPanel({ documentId, userRole }: ChatPanelProps) {
 
     setUploading(true);
     try {
+      const saved = localStorage.getItem('syncdoc_user');
+      const token = saved ? JSON.parse(saved).token : '';
+
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch(`${API_BASE_URL}/upload`, { method: 'POST', body: formData });
+      
+      const res = await fetch(`${API_BASE_URL}/api/documents/${documentId}/files`, { 
+        method: 'POST', 
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData 
+      });
+      
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
 
       socket.emit('send-message', {
         documentId,
-        message: { text: '', type: 'file', fileUrl: data.url, fileName: data.fileName, mimeType: data.mimeType },
+        message: { 
+          text: '', 
+          type: 'file', 
+          fileUrl: data.url, 
+          fileName: data.fileName, 
+          mimeType: data.mimeType 
+        },
       });
     } catch (err) {
       console.error('File upload error:', err);
