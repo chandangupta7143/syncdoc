@@ -44,7 +44,7 @@ export default function AIInsightsPanel(_props: AIInsightsPanelProps) {
     setResponse('');
 
     try {
-      const res = await fetch(`${API_BASE_URL}/ai/analyze`, {
+      const res = await fetch(`${API_BASE_URL}/api/ai/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, content }),

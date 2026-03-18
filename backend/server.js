@@ -6,17 +6,39 @@ const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const path = require('path');
 const fs = require('fs');
+const jwt = require('jsonwebtoken');
 
 require('dotenv').config();
 
 const { analyzeDocument } = require('./services/gemini');
 
 const bcrypt = require('bcryptjs');
-const { authenticateToken, generateToken } = require('./middleware/auth');
+const { authenticateToken, generateToken, JWT_SECRET } = require('./middleware/auth');
 const app = express();
 const server = http.createServer(app);
 
-app.use(cors());
+// CORS — allow the deployed frontend + localhost dev
+const ALLOWED_ORIGINS = [
+  'https://syncdoc-nine.vercel.app',
+  'https://syncdoc.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps, curl)
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log(`⚠️  CORS blocked origin: ${origin}`);
+      callback(null, true); // allow all for now, log blocked ones
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id'],
+}));
 app.use(express.json());
 
 // Request logger
@@ -95,7 +117,17 @@ const upload = multer({
 // ── Socket.io ────────────────────────────────────────
 
 const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] },
+  cors: {
+    origin: function (origin, callback) {
+      if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, true); // allow all for now
+      }
+    },
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
 });
 
 // ── RBAC Helpers ─────────────────────────────────────
@@ -422,7 +454,7 @@ app.post('/api/documents/:documentId/share', authenticateToken, async (req, res)
 });
 
 // Remove permission
-app.delete('/documents/:documentId/share/:userId', checkPermission('owner'), async (req, res) => {
+app.delete('/api/documents/:documentId/share/:userId', checkPermission('owner'), async (req, res) => {
   const { documentId, userId } = req.params;
   try {
     if (dbAvailable) {
@@ -444,7 +476,7 @@ app.delete('/documents/:documentId/share/:userId', checkPermission('owner'), asy
 });
 
 // Get user role
-app.get('/documents/:documentId/role', async (req, res) => {
+app.get('/api/documents/:documentId/role', async (req, res) => {
   const userId = req.headers['x-user-id'] || 'u1';
   const { documentId } = req.params;
   const role = (await getUserRole(documentId, userId)) || 'viewer';
@@ -473,7 +505,8 @@ app.post('/api/documents/:documentId/files', authenticateToken, upload.single('f
       fileUrl = result.secure_url;
       if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     } else {
-      fileUrl = `http://localhost:5000/files/${req.file.filename}`;
+      const port = process.env.PORT || 5000;
+      fileUrl = `${req.protocol}://${req.get('host')}/files/${req.file.filename}`;
     }
 
     // Save to Database
@@ -495,7 +528,7 @@ app.use('/files', express.static(uploadsDir));
 
 // ── AI Analyze (streaming SSE) ───────────────────────
 
-app.post('/ai/analyze', async (req, res) => {
+app.post('/api/ai/analyze', async (req, res) => {
   const { action, content } = req.body;
   if (!action || !content) {
     return res.status(400).json({ error: 'Action and content are required' });
@@ -541,7 +574,7 @@ io.on('connection', (socket) => {
     let role = 'viewer';
     if (dbAvailable) {
       const permRes = await pool.query('SELECT role FROM document_permissions WHERE document_id = $1 AND user_id = $2', [documentId, socket.user.id]);
-      if (permRes.rows.length > 0) Object.assign(role, permRes.rows[0].role);
+      if (permRes.rows.length > 0) role = permRes.rows[0].role;
     } else {
       role = await getUserRole(documentId, socket.user.id);
     }

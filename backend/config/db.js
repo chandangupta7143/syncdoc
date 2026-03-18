@@ -1,8 +1,16 @@
 const { Pool } = require('pg');
 
-// PostgreSQL connection pool
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/syncdoc';
+
+// Enable SSL for production (Neon, Supabase, Render managed Postgres)
+const isProduction = connectionString.includes('neon.tech') ||
+                     connectionString.includes('supabase') ||
+                     connectionString.includes('render.com') ||
+                     (!connectionString.includes('localhost') && !connectionString.includes('127.0.0.1'));
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/syncdoc',
+  connectionString,
+  ssl: isProduction ? { rejectUnauthorized: false } : false,
 });
 
 // Test connection

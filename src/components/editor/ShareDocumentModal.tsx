@@ -34,7 +34,12 @@ export default function ShareDocumentModal({ isOpen, onClose, documentId, curren
   // Fetch existing permissions
   useEffect(() => {
     if (!isOpen) return;
-    fetch(`${API_BASE_URL}/documents/${documentId}/permissions`)
+    const saved = localStorage.getItem('syncdoc_user');
+    const token = saved ? JSON.parse(saved).token : '';
+
+    fetch(`${API_BASE_URL}/api/documents/${documentId}/permissions`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    })
       .then((r) => r.json())
       .then((data) => setPermissions(data.permissions || []))
       .catch(() => {});
@@ -47,9 +52,15 @@ export default function ShareDocumentModal({ isOpen, onClose, documentId, curren
     setSuccess('');
 
     try {
-      const res = await fetch(`${API_BASE_URL}/documents/${documentId}/share`, {
+      const saved = localStorage.getItem('syncdoc_user');
+      const token = saved ? JSON.parse(saved).token : '';
+
+      const res = await fetch(`${API_BASE_URL}/api/documents/${documentId}/share`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': 'u1' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ email: email.trim(), role }),
       });
 
@@ -64,7 +75,9 @@ export default function ShareDocumentModal({ isOpen, onClose, documentId, curren
       setEmail('');
 
       // Refresh permissions
-      const permsRes = await fetch(`${API_BASE_URL}/documents/${documentId}/permissions`);
+      const permsRes = await fetch(`${API_BASE_URL}/api/documents/${documentId}/permissions`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
       const permsData = await permsRes.json();
       setPermissions(permsData.permissions || []);
     } catch {
@@ -76,9 +89,12 @@ export default function ShareDocumentModal({ isOpen, onClose, documentId, curren
 
   const handleRemove = async (userId: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/documents/${documentId}/share/${userId}`, {
+      const saved = localStorage.getItem('syncdoc_user');
+      const token = saved ? JSON.parse(saved).token : '';
+
+      const res = await fetch(`${API_BASE_URL}/api/documents/${documentId}/share/${userId}`, {
         method: 'DELETE',
-        headers: { 'x-user-id': 'u1' },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
       if (res.ok) {
         setPermissions((prev) => prev.filter((p) => p.userId !== userId));
