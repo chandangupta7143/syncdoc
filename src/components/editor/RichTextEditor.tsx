@@ -3,6 +3,14 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
+import Highlight from '@tiptap/extension-highlight';
+import TextAlign from '@tiptap/extension-text-align';
+import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
 import EditorToolbar from './EditorToolbar';
 import { SlashCommand } from './extensions/SlashCommand';
 import { emitDocumentChange, emitCursorUpdate, getSocket } from '../../services/socket';
@@ -13,64 +21,62 @@ interface RichTextEditorProps {
   userRole: string;
 }
 
-const placeholderContent = `
-<h1>Project Roadmap Q4</h1>
-<p>Welcome to SyncDoc — your AI-powered collaborative workspace. Start typing to edit this document in real time with your team.</p>
-<h2>Objectives</h2>
-<ul>
-  <li>Launch the beta version of the collaborative editor</li>
-  <li>Integrate AI-powered text suggestions using Google Gemini</li>
-  <li>Implement role-based access control for document sharing</li>
-  <li>Deploy real-time chat and file upload features</li>
-</ul>
-<h2>Timeline</h2>
-<p>The project is divided into multiple sprints. Each sprint focuses on a specific feature module, allowing incremental delivery and testing.</p>
-<p><strong>Sprint 1:</strong> Authentication and user management</p>
-<p><strong>Sprint 2:</strong> Document CRUD and dashboard UI</p>
-<p><strong>Sprint 3:</strong> Real-time collaboration with WebSockets</p>
-<p><strong>Sprint 4:</strong> AI integration and final polish</p>
-<h2>Notes</h2>
-<p>This is a placeholder document. In production, content will be synced in real-time across all connected clients using Socket.io.</p>
-`;
-
 export default function RichTextEditor({ documentId, userRole }: RichTextEditorProps) {
   const isReadOnly = userRole === 'viewer';
   const [permDenied, setPermDenied] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'saved' | 'syncing' | 'offline'>('saved');
   const [remoteCursors, setRemoteCursors] = useState<Record<string, CursorData>>({});
-  
+  const [wordCount, setWordCount] = useState(0);
+
   const isRemoteUpdate = useRef(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cursorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasLoadedContent = useRef(false);
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+        codeBlock: { HTMLAttributes: { class: 'syncdoc-code-block' } },
+        blockquote: { HTMLAttributes: { class: 'syncdoc-blockquote' } },
+        horizontalRule: { HTMLAttributes: { class: 'syncdoc-hr' } },
+      }),
       Underline,
+      TaskList.configure({ HTMLAttributes: { class: 'syncdoc-task-list' } }),
+      TaskItem.configure({ nested: true }),
+      Highlight.configure({ multicolor: true }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Link.configure({ openOnClick: false, HTMLAttributes: { class: 'syncdoc-link' } }),
+      Image.configure({ inline: true, allowBase64: true }),
+      TextStyle,
+      Color,
       SlashCommand,
       Placeholder.configure({
-        placeholder: "Type '/' for commands or start typing...",
+        placeholder: ({ node }) => {
+          if (node.type.name === 'heading') {
+            const level = node.attrs.level;
+            if (level === 1) return 'Untitled';
+            if (level === 2) return 'Heading 2';
+            return 'Heading 3';
+          }
+          return "Type '/' for commands, or start writing...";
+        },
       }),
     ],
-    content: placeholderContent,
+    content: '',
     editable: !isReadOnly,
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose-base max-w-none focus:outline-none min-h-[500px] ' +
-          '[&_h1]:text-3xl [&_h1]:font-extrabold [&_h1]:text-surface-900 [&_h1]:mb-4 [&_h1]:tracking-tight ' +
-          '[&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-surface-900 [&_h2]:mt-8 [&_h2]:mb-3 ' +
-          '[&_p]:text-surface-700 [&_p]:leading-relaxed [&_p]:mb-3 ' +
-          '[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 ' +
-          '[&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 ' +
-          '[&_li]:text-surface-700 [&_li]:mb-1 [&_li]:leading-relaxed ' +
-          '[&_strong]:text-surface-900 [&_strong]:font-semibold ' +
-          '[&_em]:italic [&_u]:underline ' +
-          'selection:bg-primary-100 p-8',
+        class: 'syncdoc-editor focus:outline-none min-h-[600px] px-8 py-6',
       },
     },
     onUpdate: ({ editor }) => {
       if (isRemoteUpdate.current || isReadOnly) return;
-      
+
+      // Update word count
+      const text = editor.state.doc.textContent;
+      setWordCount(text.trim() ? text.trim().split(/\s+/).length : 0);
+
       setSyncStatus('syncing');
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
@@ -85,8 +91,6 @@ export default function RichTextEditor({ documentId, userRole }: RichTextEditorP
       if (cursorTimer.current) clearTimeout(cursorTimer.current);
       cursorTimer.current = setTimeout(() => {
         const { selection } = editor.state;
-        // Emit cursor position relative to document height/width if we wanted absolute positioning,
-        // but for now we'll just send the offset.
         emitCursorUpdate(documentId, { x: 0, y: 0, offset: selection.$anchor.pos });
       }, 200);
     },
@@ -103,13 +107,12 @@ export default function RichTextEditor({ documentId, userRole }: RichTextEditorP
       isRemoteUpdate.current = true;
       const currentPos = editor.state.selection.$anchor.pos;
       editor.commands.setContent(content, { emitUpdate: false });
-      
-      // Try to preserve cursor position
+
       try {
         const maxPos = editor.state.doc.content.size;
         editor.commands.setTextSelection(Math.min(currentPos, maxPos));
-      } catch (e) { /* ignore */ }
-      
+      } catch (_e) { /* ignore */ }
+
       isRemoteUpdate.current = false;
       setSyncStatus('saved');
     }
@@ -136,9 +139,13 @@ export default function RichTextEditor({ documentId, userRole }: RichTextEditorP
     const handleDocumentLoad = ({ content }: { content: string }) => {
       if (editor && content) {
         isRemoteUpdate.current = true;
+        hasLoadedContent.current = true;
         editor.commands.setContent(content, { emitUpdate: false });
         isRemoteUpdate.current = false;
         setSyncStatus('saved');
+        // Update word count
+        const text = editor.state.doc.textContent;
+        setWordCount(text.trim() ? text.trim().split(/\s+/).length : 0);
       }
     };
 
@@ -167,27 +174,30 @@ export default function RichTextEditor({ documentId, userRole }: RichTextEditorP
       <div className={isReadOnly ? 'opacity-40 pointer-events-none' : ''}>
         <EditorToolbar editor={editor} />
       </div>
-      
+
       <div className="flex-1 overflow-y-auto w-full relative">
-        <div className="mx-auto max-w-3xl pt-6 px-8 pb-4">
+        <div className="mx-auto max-w-3xl pt-4 px-8 pb-2">
           {/* Status bar */}
-          <div className="flex items-center justify-between px-1 mb-4">
-            <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${
-                syncStatus === 'syncing' ? 'bg-primary-500 animate-pulse' : 
-                syncStatus === 'saved' ? 'bg-green-500' : 'bg-red-500'
-              }`} />
-              <span className="text-[11px] text-surface-700 font-medium capitalize">
-                {isReadOnly ? 'Read-only Access' : `${syncStatus === 'syncing' ? 'Syncing changes...' : 'All changes saved'}`}
-              </span>
+          <div className="flex items-center justify-between px-1 mb-2">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${
+                  syncStatus === 'syncing' ? 'bg-primary-500 animate-pulse' :
+                  syncStatus === 'saved' ? 'bg-green-500' : 'bg-red-500'
+                }`} />
+                <span className="text-[11px] text-surface-700 font-medium">
+                  {isReadOnly ? 'Read-only' : `${syncStatus === 'syncing' ? 'Saving...' : 'Saved'}`}
+                </span>
+              </div>
+              <span className="text-[10px] text-surface-700/60">{wordCount} words</span>
             </div>
-            
-            {/* Active collaborators indicator */}
+
+            {/* Collaborator avatars */}
             <div className="flex items-center gap-2">
               <div className="flex -space-x-1.5 overflow-hidden">
                 {Object.values(remoteCursors).map((c, i) => (
-                  <div 
-                    key={c.userId} 
+                  <div
+                    key={c.userId}
                     className={`w-5 h-5 rounded-full border border-white bg-gradient-to-br ${c.user.color} flex items-center justify-center text-[8px] font-bold text-white shadow-sm`}
                     style={{ zIndex: 10 + i }}
                     title={c.user.name}
@@ -201,7 +211,7 @@ export default function RichTextEditor({ documentId, userRole }: RichTextEditorP
 
           {/* Permission denied toast */}
           {permDenied && (
-            <div className="mb-4 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+            <div className="mb-3 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
               <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
               </svg>
@@ -209,13 +219,11 @@ export default function RichTextEditor({ documentId, userRole }: RichTextEditorP
             </div>
           )}
         </div>
-        
+
         <div className="mx-auto max-w-3xl pb-20 relative">
           <EditorContent editor={editor} className={isReadOnly ? 'cursor-default opacity-90' : ''} />
-          
-          {/* Visual cursor overlays (Simulated for bonus) */}
-          {/* Note: In a real enterprise app, we'd use tiptap coordinates to position these precisely. 
-              For this assignment, we show the participating users editing indicator. */}
+
+          {/* Live collaborator cursors */}
           <div className="absolute right-[-140px] top-20 hidden lg:block space-y-3 opacity-60">
             {Object.values(remoteCursors).map(c => (
               <div key={c.userId} className="flex items-center gap-2 group cursor-default translate-x-2 transition-transform hover:translate-x-0">
@@ -231,4 +239,3 @@ export default function RichTextEditor({ documentId, userRole }: RichTextEditorP
     </div>
   );
 }
-

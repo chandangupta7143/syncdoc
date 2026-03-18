@@ -30,6 +30,10 @@
   --color-surface-50: #f8fafc;
   --color-surface-100: #f1f5f9;
   --color-surface-200: #e2e8f0;
+  --color-surface-300: #cbd5e1;
+  --color-surface-400: #94a3b8;
+  --color-surface-500: #64748b;
+  --color-surface-600: #475569;
   --color-surface-700: #334155;
   --color-surface-800: #1e293b;
   --color-surface-900: #0f172a;
@@ -51,4 +55,267 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--color-surface-50);
   color: var(--color-surface-900);
+}
+
+/* ═══════════════════════════════════════════════════ */
+/*  NOTION-LIKE TIPTAP EDITOR STYLES                  */
+/* ═══════════════════════════════════════════════════ */
+
+.syncdoc-editor {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #1e293b;
+}
+
+/* Headings */
+.syncdoc-editor h1 {
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+  color: #0f172a;
+  letter-spacing: -0.025em;
+}
+
+.syncdoc-editor h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 1.75rem;
+  margin-bottom: 0.4rem;
+  color: #0f172a;
+}
+
+.syncdoc-editor h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1.5rem;
+  margin-bottom: 0.3rem;
+  color: #1e293b;
+}
+
+/* Paragraphs */
+.syncdoc-editor p {
+  margin-bottom: 0.5rem;
+  color: #334155;
+}
+
+.syncdoc-editor p.is-editor-empty:first-child::before {
+  color: #94a3b8;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Notion-style placeholder for headings */
+.syncdoc-editor h1.is-empty::before,
+.syncdoc-editor h2.is-empty::before,
+.syncdoc-editor h3.is-empty::before {
+  color: #cbd5e1;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Strong/Bold */
+.syncdoc-editor strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Italic and Underline */
+.syncdoc-editor em { font-style: italic; }
+.syncdoc-editor u { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Strikethrough */
+.syncdoc-editor s { text-decoration: line-through; color: #64748b; }
+
+/* Links */
+.syncdoc-editor a,
+.syncdoc-link {
+  color: #4f46e5;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.syncdoc-editor a:hover,
+.syncdoc-link:hover {
+  color: #4338ca;
+}
+
+/* Lists */
+.syncdoc-editor ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.syncdoc-editor ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.syncdoc-editor li {
+  margin-bottom: 0.25rem;
+  color: #334155;
+}
+
+.syncdoc-editor li p {
+  margin-bottom: 0.1rem;
+}
+
+/* Task List (Notion-like checkboxes) */
+.syncdoc-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.syncdoc-task-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.syncdoc-task-list li label {
+  display: flex;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.syncdoc-task-list li label input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cbd5e1;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.syncdoc-task-list li label input[type="checkbox"]:checked {
+  background: #6366f1;
+  border-color: #6366f1;
+}
+
+.syncdoc-task-list li label input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 6px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.syncdoc-task-list li[data-checked="true"] > div > p {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+
+/* Blockquote */
+.syncdoc-editor blockquote,
+.syncdoc-blockquote {
+  border-left: 3px solid #6366f1;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #475569;
+  font-style: italic;
+}
+
+/* Code Inline */
+.syncdoc-editor code {
+  background: #f1f5f9;
+  color: #e11d48;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.875em;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+/* Code Block */
+.syncdoc-editor pre,
+.syncdoc-code-block {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.syncdoc-editor pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+
+/* Horizontal Rule */
+.syncdoc-editor hr,
+.syncdoc-hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 1.5rem 0;
+}
+
+/* Highlight */
+.syncdoc-editor mark {
+  background: #fef08a;
+  border-radius: 2px;
+  padding: 1px 2px;
+}
+
+/* Images */
+.syncdoc-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+/* Selection color */
+.syncdoc-editor ::selection {
+  background: #c7d2fe;
+}
+
+/* Smooth transitions for interactive states */
+.syncdoc-editor > * {
+  transition: background-color 0.1s;
+}
+
+/* Gaped cursor indicator */
+.syncdoc-editor .ProseMirror-gapcursor {
+  display: none;
+  pointer-events: none;
+  position: absolute;
+}
+
+.syncdoc-editor .ProseMirror-gapcursor::after {
+  content: '';
+  display: block;
+  position: absolute;
+  top: -2px;
+  width: 20px;
+  border-top: 1px solid #0f172a;
+  animation: ProseMirror-cursor-blink 1.1s steps(2, start) infinite;
+}
+
+@keyframes ProseMirror-cursor-blink {
+  to { visibility: hidden; }
 }

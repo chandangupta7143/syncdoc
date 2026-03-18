@@ -7,7 +7,7 @@ let model = null;
 
 if (GEMINI_API_KEY && GEMINI_API_KEY !== 'your_api_key') {
   genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-  model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   console.log('✅ Google Gemini AI initialized');
 } else {
   console.log('⚠️  Gemini API key not configured — AI will use mock responses');
@@ -70,9 +70,14 @@ async function analyzeDocument(action, content, res) {
     res.end();
   } catch (err) {
     console.error('Gemini API error:', err.message);
-    // Fallback to mock on error
-    const mockText = MOCK_RESPONSES[action] || 'AI analysis failed. Please try again.';
-    return streamMockResponse(mockText, res);
+    if (!res.headersSent) {
+      // Fallback to mock on error only if headers haven't been sent
+      const mockText = MOCK_RESPONSES[action] || 'AI analysis failed. Please try again.';
+      return streamMockResponse(mockText, res);
+    } else {
+      res.write(`data: ${JSON.stringify({ text: '\n\n[Error: Stream interrupted]', done: true })}\n\n`);
+      res.end();
+    }
   }
 }
 

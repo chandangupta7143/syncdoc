@@ -546,6 +546,95 @@ app.post('/api/ai/analyze', async (req, res) => {
   }
 });
 
+// ── Admin Routes ─────────────────────────────────────
+
+app.get('/api/admin/stats', authenticateToken, async (req, res) => {
+  try {
+    if (!dbAvailable) return res.json({ totalUsers: 0, totalDocs: 0, totalMessages: 0, activeToday: 0 });
+    
+    // Total Users
+    const usersRes = await pool.query('SELECT COUNT(*) FROM users');
+    const totalUsers = parseInt(usersRes.rows[0].count);
+    
+    // Total Docs
+    const docsRes = await pool.query('SELECT COUNT(*) FROM documents');
+    const totalDocs = parseInt(docsRes.rows[0].count);
+    
+    // Total Messages
+    const msgsRes = await pool.query('SELECT COUNT(*) FROM messages');
+    const totalMessages = parseInt(msgsRes.rows[0].count);
+    
+    // Active Today
+    const activeRes = await pool.query("SELECT COUNT(DISTINCT user_id) FROM document_permissions WHERE role = 'editor'");
+    const activeToday = parseInt(activeRes.rows[0].count); // Rough approximation
+    
+    res.json({ totalUsers, totalDocs, totalMessages, activeToday });
+  } catch (err) {
+    console.error('Admin stats error:', err);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+app.get('/api/admin/users', authenticateToken, async (req, res) => {
+  try {
+    if (!dbAvailable) return res.json({ users: [] });
+    
+    const result = await pool.query(`
+      SELECT u.id, u.name, u.email, u.created_at, 
+      (SELECT COUNT(*) FROM documents d WHERE d.owner_id = u.id) as doc_count
+      FROM users u ORDER BY u.created_at DESC
+    `);
+    
+    res.json({ users: result.rows });
+  } catch (err) {
+    console.error('Admin users error:', err);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+app.delete('/api/admin/users/:userId', authenticateToken, async (req, res) => {
+  try {
+    if (!dbAvailable) return res.json({ success: true });
+    
+    // CASCADE will handle deleting documents and permissions
+    await pool.query('DELETE FROM users WHERE id = $1', [req.params.userId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete user error:', err);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
+app.get('/api/admin/documents', authenticateToken, async (req, res) => {
+  try {
+    if (!dbAvailable) return res.json({ documents: [] });
+    
+    const result = await pool.query(`
+      SELECT d.id, d.title, d.created_at, d.updated_at, u.name as owner_name, u.email as owner_email
+      FROM documents d
+      LEFT JOIN users u ON d.owner_id = u.id
+      ORDER BY d.created_at DESC
+    `);
+    
+    res.json({ documents: result.rows });
+  } catch (err) {
+    console.error('Admin documents error:', err);
+    res.status(500).json({ error: 'Failed to fetch documents' });
+  }
+});
+
+app.delete('/api/admin/documents/:docId', authenticateToken, async (req, res) => {
+  try {
+    if (!dbAvailable) return res.json({ success: true });
+    
+    await pool.query('DELETE FROM documents WHERE id = $1', [req.params.docId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete document error:', err);
+    res.status(500).json({ error: 'Failed to delete document' });
+  }
+});
+
 // ── Socket.io Events ─────────────────────────────────
 
 io.use((socket, next) => {

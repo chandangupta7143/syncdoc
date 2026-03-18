@@ -39,6 +39,18 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    label: 'Admin Panel',
+    href: '/admin',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 10l-2-2" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-2 2" />
+      </svg>
+    ),
+  },
 ];
 
 interface SidebarProps {

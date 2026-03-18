@@ -4,7 +4,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import DocumentEditorPage from './pages/DocumentEditorPage';
-
+import AdminPage from './pages/AdminPage';
 function App() {
   return (
     <BrowserRouter>
@@ -17,6 +17,7 @@ function App() {
         <Route path="/recent" element={<DashboardPage />} />
         <Route path="/settings" element={<DashboardPage />} />
         <Route path="/document/:id" element={<DocumentEditorPage />} />
+        <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </BrowserRouter>
   );
